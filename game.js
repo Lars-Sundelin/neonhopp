@@ -15,6 +15,8 @@ function say(text,seconds=1.3){$('#toast').textContent=text;toastUntil=performan
 async function begin(){const resuming=state==='paused';
 if(!resuming){stopSound();mode=$('#mode').value;step=mode==='easy'?.75:.6;score=beat=combo=maxCombo=phase=elapsed=0;lives=3;x=goal=0;tapped.clear();particles=[];$('#score').textContent='0';$('#progress').style.width='0%';$('#lives').textContent=mode==='easy'?'∞':'♥ ♥ ♥';audio=new Audio(mode==='easy'?'moon-easy.wav':'moon-challenge.wav');audio.preload='auto';audio.volume=.8;audio.onended=()=>{if(state==='play'){while(beat<TOTAL&&state==='play'){land(beat);beat++}}};audio.onerror=()=>{if(state==='play')pause();audioMessage()};audio.onpause=()=>{if(state==='play')pause()}}
 audio.muted=muted;
+// Speed up music and jumps together; currentTime keeps them synchronized.
+audio.playbackRate=1.15;
 // Call play directly inside the button gesture to unlock media audio on iOS.
 try{await audio.play()}catch{audioMessage();return}
 origin=0;state='play';$('#panel').hidden=true;$('#pause').style.display='inline-block';$('#foot').textContent='Dutta på nästa platta · du behöver inte hålla kvar';say('Dutta på de lysande plattorna!',3)}
