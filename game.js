@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),canvas=$('#c'),ctx=canvas.getContext('2d');
 let w,h,view,dpr;function resize(){w=innerWidth;h=innerHeight;view=Math.min(w,h*.9);dpr=Math.min(devicePixelRatio||1,2);canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}resize();addEventListener('resize',resize);
 const TOTAL=80,patterns=[[0,0,0,0,-1,-1,0,0],[0,1,1,0,0,-1,-1,0],[-1,0,1,1,0,-1,0,0],[0,1,0,-1,0,1,0,0],[0,-1,0,1,1,0,-1,0]];
 const laneAt=i=>i<0?0:patterns[Math.min(4,Math.floor(i/16))][i%8];
-const tileScale=i=>i>=8&&i%7===1?.4:1;
+const tileScale=i=>i>=0&&i%8===7?.4:1;
 let state='menu',mode='easy',x=0,goal=0,beat=0,phase=0,score=0,combo=0,maxCombo=0,lives=3,best=0,particles=[],pulse=0,toastUntil=0,last=0;
 try{best=Number(localStorage.neonbest)||0}catch{}$('#best').textContent='REKORD '+best;
 let audio,origin=0,elapsed=0,step=.75,muted=false,tapped=new Set();
