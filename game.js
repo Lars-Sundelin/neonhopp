@@ -12,7 +12,7 @@ function audioMessage(){say('Inget ljud? Höj medievolymen och tryck på Testa l
 async function testSound(){try{const sample=new Audio('sound-check.wav');sample.volume=.8;await sample.play();say('Hör du de tre tonerna?',3)}catch{audioMessage()}}
 $('#testSound').onclick=testSound;
 function say(text,seconds=1.3){$('#toast').textContent=text;toastUntil=performance.now()+seconds*1000}
-async function begin(){const resuming=state==='paused';
+async function begin(){clearCelebration();const resuming=state==='paused';
 if(!resuming){stopSound();mode=$('#mode').value;step=mode==='easy'?.75:.6;score=beat=combo=maxCombo=phase=elapsed=0;lives=3;x=goal=0;tapped.clear();tapBursts.clear();highJumps.clear();particles=[];$('#score').textContent='0';$('#progress').style.width='0%';$('#lives').textContent=mode==='easy'?'∞':'♥ ♥ ♥';audio=new Audio(mode==='easy'?'moon-easy.wav':'moon-challenge.wav');audio.preload='auto';audio.volume=.8;audio.onended=()=>{if(state==='play'){while(beat<TOTAL&&state==='play'){land(beat);beat++}}};audio.onerror=()=>{if(state==='play')pause();audioMessage()};audio.onpause=()=>{if(state==='play')pause()}}
 audio.muted=muted;
 // Speed up music and jumps together; currentTime keeps them synchronized.
@@ -22,8 +22,14 @@ try{await audio.play()}catch{audioMessage();return}
 origin=0;state='play';$('#panel').hidden=true;$('#pause').style.display='inline-block';$('#foot').textContent='Dutta på plattan · dubbeltryck över rosa hinder';say('Dutta på de lysande plattorna!',3)}
 function release(){}
 function pause(){if(state!=='play')return;elapsed=audio.currentTime;state='paused';stopSound();$('#panel').hidden=false;$('#intro').textContent='En liten paus. Äventyret väntar!';$('#start').textContent='Fortsätt →';$('#mode').style.display='none';$('#home').hidden=false}
-function finish(won){state='result';stopSound();release();$('#panel').hidden=false;$('#mode').style.display='block';$('#pause').style.display='none';$('#home').hidden=true;$('#intro').innerHTML=won?'🌟 Du klarade Månskensbanan!<br>'+score+' träffar · längsta rad '+maxCombo:'Vilken fin runda! '+score+' träffar.<br>Hoppa igen eller prova det lugna övningsläget.';$('#start').textContent='Spela igen →';say(won?'★ Äventyr klart! ★':'Bra kämpat!',4)}
-$('#start').onclick=begin;$('#pause').onclick=pause;$('#home').onclick=()=>{state='menu';stopSound();$('#intro').innerHTML='Dutta på plattan du vill landa på.<br>Lyft fingret och dutta på nästa!';$('#start').textContent='Nu hoppar vi! →';$('#mode').style.display='block';$('#home').hidden=true;$('#pause').style.display='none'};
+function celebrate(){
+const layer=document.createElement('div');layer.id='celebration';layer.setAttribute('aria-hidden','true');
+const colors=['#ff85bb','#ffe68c','#7dfff0','#b9a1ff','#c6fc74'];
+for(let i=0;i<72;i++){const piece=document.createElement('span');piece.textContent=i%5===0?'★':'';piece.style.cssText='left:'+((i*37)%100)+'%;background:'+(i%5===0?'transparent':colors[i%5])+';color:'+colors[i%5]+';animation-delay:'+((i%12)*.12)+'s;animation-duration:'+(2.8+(i%7)*.3)+'s;--drift:'+((i%2?1:-1)*(30+i%90))+'px;--spin:'+(360+i*31)+'deg';layer.appendChild(piece)}document.body.appendChild(layer);setTimeout(()=>layer.remove(),7000);
+}
+function clearCelebration(){document.getElementById('celebration')?.remove()}
+function finish(won){clearCelebration();if(won)celebrate();state='result';stopSound();release();$('#panel').hidden=false;$('#mode').style.display='block';$('#pause').style.display='none';$('#home').hidden=true;$('#intro').innerHTML=won?'<span class="trophy">🏆</span><strong>Hurra! Du är i mål!</strong><br>Du klarade Månskensbanan!<br>⭐ '+score+' träffar · längsta rad '+maxCombo:'Vilken fin runda! '+score+' träffar.<br>Hoppa igen eller prova det lugna övningsläget.';$('#start').textContent='Spela igen →';say(won?'★ Äventyr klart! ★':'Bra kämpat!',4)}
+$('#start').onclick=begin;$('#pause').onclick=pause;$('#home').onclick=()=>{clearCelebration();state='menu';stopSound();$('#intro').innerHTML='Dutta på plattan du vill landa på.<br>Lyft fingret och dutta på nästa!';$('#start').textContent='Nu hoppar vi! →';$('#mode').style.display='block';$('#home').hidden=true;$('#pause').style.display='none'};
 $('#sound').onclick=()=>{muted=!muted;if(audio)audio.muted=muted;$('#sound').textContent=muted?'Ljud av':'Ljud på';$('#sound').setAttribute('aria-pressed',String(muted))};document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 const tapBursts=new Map(),highJumps=new Set();
 const obstacleAt=i=>i>=10&&i%12===10;
