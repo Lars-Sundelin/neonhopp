@@ -31,10 +31,40 @@ canvas.onpointerdown=e=>{if(state!=='play')return;e.preventDefault();let nearest
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;if(['ArrowLeft','ArrowRight','ArrowDown','Space'].includes(e.code))e.preventDefault();if(state==='play'){const lane=e.code==='ArrowLeft'?-1:e.code==='ArrowRight'?1:e.code==='ArrowDown'?0:null;if(lane!==null){goal=lane;if(lane===laneAt(beat))selectTile(beat)}}if(e.code==='Space')state==='play'?pause():begin()});
 function project(lane,z){const q=1/(1+Math.max(-.5,z)*.5);return{x:w/2+lane*view*.25*q,y:h*.27+h*.54*q,s:view*.108*q,q}}
 function polygon(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach(([a,b],i)=>i?ctx.lineTo(a,b):ctx.moveTo(a,b));ctx.closePath();ctx.fill()}
-function tile(lane,z,active,selected=false,index=-1){if(z<-.65||z>14)return;const age=(performance.now()-(tapBursts.get(index)??-Infinity))/1000;
+function tile(lane,z,active,selected=false,index=-1){
+if(z<-.65||z>14)return;
+const now=performance.now(),age=(now-(tapBursts.get(index)??-Infinity))/1000;
 const feedback=age>=0&&age<.28?Math.sin(Math.PI*age/.28):0;
-const p=project(lane,z),a=p.s*tileScale(index)*(1+.18*feedback),b=a*.32,depth=a*.32;ctx.save();
-if(feedback>0){ctx.save();ctx.globalAlpha=(1-age/.28)*.85;ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.shadowColor='#7dfff0';ctx.shadowBlur=18;ctx.beginPath();ctx.ellipse(p.x,p.y,a*(1+age*2.5),b*(1+age*3.5),0,0,Math.PI*2);ctx.stroke();ctx.restore()}const points=[[p.x-a,p.y-b],[p.x+a,p.y-b],[p.x+a*1.12,p.y+b],[p.x-a*1.12,p.y+b]];polygon([[p.x-a*1.12,p.y+b],[p.x+a*1.12,p.y+b],[p.x+a*1.12,p.y+b+depth],[p.x-a*1.12,p.y+b+depth]],'#155887');ctx.shadowColor=selected?'#7dfff0':active?'#e3ff85':'#43bfff';ctx.shadowBlur=active?20:10;polygon(points,selected?'#7dfff0':active?'#d9fb7b':'#389de5');ctx.shadowBlur=0;ctx.strokeStyle=active?'#fffde9':'#effaff';ctx.lineWidth=Math.max(1,3*p.q);ctx.stroke();ctx.strokeStyle='#ffffff55';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(p.x,p.y,a*.3,b*.5,0,0,Math.PI*2);ctx.stroke();polygon([[p.x,p.y-b*.35],[p.x+a*.1,p.y],[p.x,p.y+b*.35],[p.x-a*.1,p.y]],'#fff');ctx.restore()}
+const p=project(lane,z),a=p.s*tileScale(index)*(1+.18*feedback),b=a*.32,d=a*.36;
+const light=selected?'#a5fff0':active?'#fff1a0':'#94eaff',core=selected?'#35d6b5':active?'#dfac42':'#448dc9';
+ctx.save();ctx.translate(p.x,p.y);
+const face=(points,color)=>polygon(points,color);
+const ring=(s,y=0)=>[[-a*.82*s,-b*s+y],[a*.82*s,-b*s+y],[a*1.08*s,-b*.48*s+y],[a*1.08*s,b*.48*s+y],[a*.82*s,b*s+y],[-a*.82*s,b*s+y],[-a*1.08*s,b*.48*s+y],[-a*1.08*s,-b*.48*s+y]];
+// Soft reflected light below the floating carved shell.
+const halo=ctx.createRadialGradient(0,d,0,0,d,a*1.35);halo.addColorStop(0,selected?'#63ffdf55':active?'#ffe18b44':'#47baff33');halo.addColorStop(1,'#47baff00');ctx.fillStyle=halo;ctx.beginPath();ctx.ellipse(0,d,a*1.35,b*2.1,0,0,Math.PI*2);ctx.fill();
+face([[-a*.96,b*.35],[a*.96,b*.35],[a*.72,b+d],[a*.35,b+d*1.17],[-a*.6,b+d]],'#132e51');
+face([[-a*.96,b*.35],[-a*.6,b+d],[-a*.13,b+d*.85],[0,b*.65]],'#28537b');
+face([[0,b*.65],[-a*.13,b+d*.85],[a*.35,b+d*1.17],[a*.72,b+d],[a*.96,b*.35]],'#1b3d65');
+// Suspended gemstone and gold mounting prongs.
+face([[-a*.16,b+d*.5],[0,b+d*1.45],[a*.18,b+d*.5],[0,b+d*.25]],core);
+face([[-a*.16,b+d*.5],[0,b+d*1.45],[0,b+d*.25]],light);
+const rim=ctx.createLinearGradient(0,-b,0,b+d*.42);rim.addColorStop(0,'#ffe8ac');rim.addColorStop(.4,'#acb8c7');rim.addColorStop(1,'#43547a');face(ring(1,d*.28),rim);
+const surface=ctx.createLinearGradient(-a,-b,a,b);surface.addColorStop(0,light);surface.addColorStop(.28,core);surface.addColorStop(1,active?'#87633c':'#234f84');
+ctx.shadowColor=light;ctx.shadowBlur=(active?14:5)*p.q;face(ring(1),surface);ctx.shadowBlur=0;
+ctx.strokeStyle='#e9faffcc';ctx.lineWidth=Math.max(.7,1.5*p.q);ctx.stroke();
+face(ring(.87),active?'#b98a42':'#316b9e');
+const inset=ctx.createLinearGradient(0,-b,0,b);inset.addColorStop(0,active?'#f1cf78':'#68b9dc');inset.addColorStop(1,active?'#c69247':'#3478b0');face(ring(.79),inset);
+// Inlaid border, corner rivets and symmetrical engraved channels.
+ctx.strokeStyle=light;ctx.lineWidth=Math.max(.6,p.q);ctx.stroke();
+if(a>10){ctx.strokeStyle=active?'#72533988':'#16477588';ctx.beginPath();for(const s of [-1,1]){ctx.moveTo(s*a*.67,-b*.44);ctx.lineTo(s*a*.43,-b*.44);ctx.lineTo(s*a*.27,0);ctx.lineTo(s*a*.43,b*.44);ctx.lineTo(s*a*.67,b*.44)}ctx.stroke();
+for(const s of [-1,1])for(const t of [-1,1]){face([[s*a*.87,t*b*.57-a*.025],[s*a*.87+a*.04,t*b*.57],[s*a*.87,t*b*.57+a*.025],[s*a*.87-a*.04,t*b*.57]],'#fff0ba')}
+ctx.strokeStyle='#e5f9ff77';ctx.beginPath();ctx.ellipse(0,0,a*.29,b*.59,0,0,Math.PI*2);ctx.stroke();}
+// Four-point moonstone crest remains readable on distant platforms.
+ctx.shadowColor=light;ctx.shadowBlur=8*p.q;face([[0,-b*.64],[a*.09,-b*.16],[a*.22,0],[a*.09,b*.16],[0,b*.64],[-a*.09,b*.16],[-a*.22,0],[-a*.09,-b*.16]],light);ctx.shadowBlur=0;
+for(const s of [-1,1]){face([[s*a*.58,b+d*.27],[s*a*.58+a*.08,b+d*.27],[s*a*.58+a*.06,b+d*.48],[s*a*.58-a*.02,b+d*.48]],light)}
+if(active||selected){const sparkle=.6+.4*Math.sin(now*.004+index);ctx.globalAlpha=sparkle;ctx.strokeStyle='#fff9d8';ctx.lineWidth=Math.max(1,p.q);for(const s of [-1,1]){const sx=s*a*.91,sy=-b*.9;ctx.beginPath();ctx.moveTo(sx-a*.06,sy);ctx.lineTo(sx+a*.06,sy);ctx.moveTo(sx,sy-a*.06);ctx.lineTo(sx,sy+a*.06);ctx.stroke()}ctx.globalAlpha=1;}
+if(feedback>0){ctx.globalAlpha=(1-age/.28)*.85;ctx.strokeStyle='#fff';ctx.lineWidth=3*p.q;ctx.beginPath();ctx.ellipse(0,0,a*(1+age*2.5),b*(1+age*3.5),0,0,Math.PI*2);ctx.stroke()}
+ctx.restore();}
 function land(i){const target=laneAt(i),distance=Math.abs(x-target);let hit=tapped.has(i)&&distance<.57;tapped.delete(i);
 if(!hit&&mode==='easy'){say('Miss! Sikta på nästa platta.');combo=0}else if(!hit){lives--;$('#lives').textContent='♥ '.repeat(lives);say('Nästa hopp!');combo=0;if(lives===0){finish(false);return}}
 if(hit){score++;combo++;maxCombo=Math.max(maxCombo,combo);$('#score').textContent=score;if(combo%8===0)say('★ '+combo+' i rad!');else if(distance<.18&&i>3)say('Perfekt!',.55);if(score>best){best=score;try{localStorage.neonbest=best}catch{}$('#best').textContent='REKORD '+best}}else combo=0;
